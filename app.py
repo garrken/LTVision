@@ -1,5 +1,12 @@
 import streamlit as st
 import pandas as pd
+import sys
+import os
+
+# Dynamiskt lägg till "src" i Python-sökvägen
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+
+# Importera LTVModel från ltvision
 from ltvision import LTVModel
 
 # Titel och introduktion
@@ -20,7 +27,7 @@ if uploaded_file:
     required_columns = ["customer_id", "transaction_date", "transaction_amount"]
     if all(col in data.columns for col in required_columns):
         st.success("Datan innehåller alla nödvändiga kolumner!")
-        
+
         # Träna modellen
         st.header("Steg 2: Träna LTV-modellen")
         model = LTVModel(
