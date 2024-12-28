@@ -40,7 +40,7 @@ if uploaded_file:
     st.write("Kolumner efter att ha tagit bort mellanslag:", data.columns.tolist())
 
     # Kontrollera och skapa saknade kolumner
-    required_columns = ["timestamp_registration", "timestamp_event", "event_name", "purchase_value"]
+    required_columns = ["UUID", "timestamp_registration", "timestamp_event", "event_name", "purchase_value"]
     data = ensure_columns_exist(data, required_columns)
 
     # Formattera kolumner
@@ -71,8 +71,8 @@ if uploaded_file:
         st.stop()
 
     # Kontrollera att alla kolumner finns och logga datatyper
-    st.write("Kolumner och datatyper innan LTVexploratory:", data.dtypes)
-    st.write("Dataframe som skickas till LTVexploratory:", data.head())
+    st.write("Kolumner och datatyper efter bearbetning:", data.dtypes)
+    st.write("Dataframe efter bearbetning:", data.head())
 
     # Knapp för att gå vidare
     if st.button("Fortsätt till analys"):
@@ -89,11 +89,12 @@ if uploaded_file:
                 event_name_col="event_name",
                 value_col="purchase_value",
             )
+            st.success("LTVexploratory har initierats framgångsrikt.")
         except KeyError as e:
             st.error(f"Ett fel uppstod vid hantering av kolumner: {e}")
             st.stop()
         except Exception as e:
-            st.error(f"Ett oväntat fel inträffade: {e}")
+            st.error(f"Ett oväntat fel inträffade vid initiering: {e}")
             st.stop()
 
         # Generera analys
