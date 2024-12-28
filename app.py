@@ -81,8 +81,14 @@ if uploaded_file:
         st.error(f"Ett fel uppstod vid formattering av kolumner: {e}")
         st.stop()
 
-    # Logga datatyper
+    # Logga kolumner och datatyper
     st.write("Kolumner och datatyper efter bearbetning:", data.dtypes)
+
+    # Kontrollera att alla kolumner finns innan analys
+    missing_columns = [col for col in required_columns if col not in data.columns]
+    if missing_columns:
+        st.error(f"Saknade kolumner efter bearbetning: {missing_columns}")
+        st.stop()
 
     # Knapp för att gå vidare
     if st.button("Fortsätt till analys"):
