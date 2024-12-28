@@ -9,6 +9,23 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 # Importera LTVexploratory från exploratory.py
 from exploratory import LTVexploratory
 
+# Avaktivera Arrow i Streamlit
+st.experimental_set_query_params(use_arrow=False)
+
+# Funktion för att säkerställa kompatibilitet
+def ensure_compatible_data(data):
+    """
+    Säkerställ att alla kolumner har kompatibla datatyper.
+    """
+    for col in data.columns:
+        if data[col].dtype == 'O':  # Objektkolumner
+            data[col] = data[col].astype(str).fillna("")
+        elif pd.api.types.is_numeric_dtype(data[col]):
+            data[col] = pd.to_numeric(data[col], errors="coerce").fillna(0)
+        elif pd.api.types.is_datetime64_any_dtype(data[col]):
+            data[col] = pd.to_datetime(data[col], errors="coerce").fillna(pd.Timestamp("1970-01-01"))
+    return data
+
 # Titel och introduktion
 st.title("LTVision Streamlit App")
 st.write("Analysera kundens livstidsvärde (LTV) med hjälp av LTVexploratory.")
@@ -22,39 +39,16 @@ if uploaded_file:
     data = pd.read_csv(uploaded_file)
     st.write("Kolumner direkt från filen:", data.columns.tolist())
 
-    # Hantera datatyper manuellt
+    # Konvertera data för kompatibilitet
     try:
-        # UUID som sträng
-        if "UUID" in data.columns:
-            data["UUID"] = data["UUID"].astype(str)
-
-        # timestamp_registration som datetime
-        if "timestamp_registration" in data.columns:
-            data["timestamp_registration"] = pd.to_datetime(data["timestamp_registration"], errors="coerce")
-            if data["timestamp_registration"].isnull().any():
-                st.warning("Ogiltiga värden i `timestamp_registration` har ersatts med NaT.")
-
-        # timestamp_event som datetime
-        if "timestamp_event" in data.columns:
-            data["timestamp_event"] = pd.to_datetime(data["timestamp_event"], errors="coerce")
-            if data["timestamp_event"].isnull().any():
-                st.warning("Ogiltiga värden i `timestamp_event` har ersatts med NaT.")
-
-        # event_name som sträng
-        if "event_name" in data.columns:
-            data["event_name"] = data["event_name"].astype(str)
-
-        # purchase_value som numerisk
-        if "purchase_value" in data.columns:
-            data["purchase_value"] = pd.to_numeric(data["purchase_value"], errors="coerce").fillna(0)
-
-        st.success("Datan har formatterats framgångsrikt.")
+        data = ensure_compatible_data(data)
+        st.success("Datan har konverterats för kompatibilitet.")
     except Exception as e:
-        st.error(f"Fel vid hantering av datatyper: {e}")
+        st.error(f"Fel vid konvertering av datatyper: {e}")
         st.stop()
 
-    # Förhandsgranska bearbetad data
-    st.write("Kolumner och datatyper efter konvertering:")
+    # Förhandsgranska data
+    st.write("Kolumner och datatyper:")
     st.write(data.dtypes)
     st.write("Förhandsgranskning av data:")
     st.write(data.head())
