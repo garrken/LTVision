@@ -24,7 +24,6 @@ st.markdown("""
   - `timestamp_event`: Tidpunkt för händelse (datetime).
   - `event_name`: Typ av händelse.
   - `purchase_value`: Värde av köp (numerisk).
-  - Andra kolumner: Kan användas för segmentering eller extra analys.
 """)
 
 # Ladda upp CSV-fil
@@ -35,6 +34,9 @@ if uploaded_file:
     data = pd.read_csv(uploaded_file)
     st.write("Förhandsgranskning av data:")
     st.write(data.head())
+
+    # Visa kolumnnamn för felsökning
+    st.write("Kolumner i datasetet:", data.columns.tolist())
 
     # Kontrollera om obligatoriska kolumner finns
     mandatory_columns = ["UUID", "timestamp_registration"]
@@ -67,6 +69,14 @@ if uploaded_file:
     # Knapp för att gå vidare
     if st.button("Fortsätt till analys"):
         st.header("Steg 2: Generera analys och visualiseringar")
+
+        # Kontrollera om valfria kolumner finns innan LTVexploratory körs
+        required_columns = ["timestamp_registration", "timestamp_event", "event_name", "purchase_value"]
+        missing_columns = [col for col in required_columns if col not in data.columns]
+
+        if missing_columns:
+            st.error(f"Följande kolumner saknas i datasetet och krävs för analys: {', '.join(missing_columns)}")
+            st.stop()
 
         # Skapa LTVexploratory-objekt
         ltv = LTVexploratory(
