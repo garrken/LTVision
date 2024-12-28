@@ -24,6 +24,25 @@ def ensure_columns_exist(data, required_columns):
             st.warning(f"Kolumnen `{col}` saknades och har lagts till som placeholder.")
     return data
 
+# Funktion för Arrow-kompatibilitet
+def ensure_arrow_compatible(data):
+    """
+    Säkerställ att alla kolumner i en DataFrame är Arrow-kompatibla.
+    """
+    for col in data.columns:
+        # Förvandla kolumner av objekttyp till strängar
+        if data[col].dtype == 'O':  # dtype 'O' betyder objekt
+            data[col] = data[col].astype(str)
+        # Fyll NaN med standardvärden baserat på typ
+        if data[col].isnull().any():
+            if pd.api.types.is_numeric_dtype(data[col]):
+                data[col] = data[col].fillna(0)
+            elif pd.api.types.is_datetime64_any_dtype(data[col]):
+                data[col] = data[col].fillna(pd.Timestamp("1970-01-01"))
+            else:
+                data[col] = data[col].fillna("")
+    return data
+
 # Titel och introduktion
 st.title("LTVision Streamlit App")
 st.write("Analysera kundens livstidsvärde (LTV) med hjälp av LTVexploratory.")
@@ -70,6 +89,14 @@ if uploaded_file:
         st.success("Alla kolumner har korrekt formatterats.")
     except Exception as e:
         st.error(f"Ett fel uppstod vid formattering av kolumner: {e}")
+        st.stop()
+
+    # Kontrollera och konvertera för Arrow-kompatibilitet
+    try:
+        data = ensure_arrow_compatible(data)
+        st.success("Data är nu Arrow-kompatibel!")
+    except Exception as e:
+        st.error(f"Ett fel uppstod vid konvertering till Arrow-kompatibla typer: {e}")
         st.stop()
 
     # Kontrollera att alla kolumner finns och logga datatyper
