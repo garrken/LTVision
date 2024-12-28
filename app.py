@@ -58,6 +58,12 @@ if uploaded_file:
         st.error("Kolumnen `timestamp_registration` innehåller ogiltiga värden som inte kunde konverteras till datetime.")
         st.stop()
 
+    # Konvertera timestamp_event till datetime (om den finns)
+    if "timestamp_event" in data.columns:
+        data["timestamp_event"] = pd.to_datetime(data["timestamp_event"], errors="coerce")
+        if data["timestamp_event"].isnull().any():
+            st.warning("Kolumnen `timestamp_event` innehåller ogiltiga värden som inte kunde konverteras till datetime.")
+
     # Knapp för att gå vidare
     if st.button("Fortsätt till analys"):
         st.header("Steg 2: Generera analys och visualiseringar")
