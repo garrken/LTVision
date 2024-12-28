@@ -13,20 +13,8 @@ from exploratory import LTVexploratory
 st.title("LTVision Streamlit App")
 st.write("Analysera kundens livstidsvärde (LTV) med hjälp av LTVexploratory.")
 
-# Information om obligatoriska och valfria kolumner
+# Steg 1: Ladda upp data
 st.header("Steg 1: Ladda upp din data")
-st.subheader("Kolumner i filen:")
-st.markdown("""
-- **Obligatoriska:**
-  - `UUID`: Kundens unika identifierare.
-  - `timestamp_registration`: Tidpunkt för registrering (datetime).
-- **Valfria:**
-  - `timestamp_event`: Tidpunkt för händelse (datetime).
-  - `event_name`: Typ av händelse.
-  - `purchase_value`: Värde av köp (numerisk).
-""")
-
-# Ladda upp CSV-fil
 uploaded_file = st.file_uploader("Ladda upp en CSV-fil", type=["csv"])
 
 if uploaded_file:
@@ -38,58 +26,83 @@ if uploaded_file:
     data.columns = data.columns.str.strip()
     st.write("Kolumner efter att ha tagit bort mellanslag:", data.columns.tolist())
 
-    # Kontrollera obligatoriska och valfria kolumner
+    # Kontrollera obligatoriska kolumner
     mandatory_columns = ["UUID", "timestamp_registration"]
-    optional_columns = ["timestamp_event", "event_name", "purchase_value"]
-
-    # Logga saknade obligatoriska kolumner
-    missing_required = [col for col in mandatory_columns if col not in data.columns]
-    if missing_required:
-        st.error(f"Obligatoriska kolumner saknas: {missing_required}")
+    if not all(col in data.columns for col in mandatory_columns):
+        st.error(f"Saknar obligatoriska kolumner: {', '.join([col for col in mandatory_columns if col not in data.columns])}")
         st.stop()
 
-    st.success("Alla obligatoriska kolumner finns!")
+    # Lägg till valfria kolumner om de saknas
+    required_columns = ["timestamp_registration", "timestamp_event", "event_name", "purchase_value"]
+    for col in required_columns:
+        if col not in data.columns:
+            if col == "timestamp_registration":
+                data[col] = pd.NaT
+            elif col in ["timestamp_event", "purchase_value"]:
+                data[col] = 0.0
+            elif col == "event_name":
+                data[col] = None
+            st.warning(f"Kolumnen `{col}` saknades och har lagts till som en placeholder.")
 
-    # Lägg till saknade valfria kolumner med defaultvärden
-    if "timestamp_event" not in data.columns:
-        data["timestamp_event"] = pd.NaT
-        st.warning("Kolumnen `timestamp_event` saknas. Skapar en default-kolumn.")
-    if "event_name" not in data.columns:
-        data["event_name"] = None
-        st.warning("Kolumnen `event_name` saknas. Skapar en default-kolumn.")
-    if "purchase_value" not in data.columns:
-        data["purchase_value"] = 0.0
-        st.warning("Kolumnen `purchase_value` saknas. Skapar en default-kolumn.")
+    # Formattera kolumner
+    try:
+        # UUID: sträng
+        data["UUID"] = data["UUID"].astype(str)
+        st.success("Kolumnen `UUID` har konverterats till sträng.")
 
-    # Konvertera UUID till sträng
-    data["UUID"] = data["UUID"].astype(str)
+        # timestamp_registration: datetime
+        data["timestamp_registration"] = pd.to_datetime(data["timestamp_registration"], errors="coerce")
+        if data["timestamp_registration"].isnull().any():
+            st.error("Ogiltiga värden i kolumnen `timestamp_registration`. Kontrollera filen.")
+            st.stop()
+        st.success("Kolumnen `timestamp_registration` har konverterats till datetime.")
 
-    # Konvertera timestamp_registration till datetime
-    data["timestamp_registration"] = pd.to_datetime(data["timestamp_registration"], errors="coerce")
-    if data["timestamp_registration"].isnull().any():
-        st.error("Ogiltiga värden i kolumnen `timestamp_registration`. Kontrollera filen.")
+        # timestamp_event: datetime
+        if "timestamp_event" in data.columns:
+            data["timestamp_event"] = pd.to_datetime(data["timestamp_event"], errors="coerce")
+            if data["timestamp_event"].isnull().any():
+                st.warning("Ogiltiga värden i kolumnen `timestamp_event` har ersatts med NaT.")
+            st.success("Kolumnen `timestamp_event` har konverterats till datetime.")
+
+        # event_name: sträng
+        if "event_name" in data.columns:
+            data["event_name"] = data["event_name"].astype(str)
+            st.success("Kolumnen `event_name` har konverterats till sträng.")
+
+        # purchase_value: numerisk
+        if "purchase_value" in data.columns:
+            data["purchase_value"] = pd.to_numeric(data["purchase_value"], errors="coerce")
+            if data["purchase_value"].isnull().any():
+                st.warning("Ogiltiga värden i kolumnen `purchase_value` har ersatts med 0.")
+            data["purchase_value"] = data["purchase_value"].fillna(0)
+            st.success("Kolumnen `purchase_value` har konverterats till numerisk.")
+
+    except Exception as e:
+        st.error(f"Ett fel uppstod vid formattering av kolumner: {e}")
         st.stop()
 
-    # Konvertera timestamp_event till datetime
-    data["timestamp_event"] = pd.to_datetime(data["timestamp_event"], errors="coerce")
-
-    # Logga kolumner efter bearbetning
-    st.write("Kolumner efter bearbetning:", data.columns.tolist())
+    # Logga datatyper
+    st.write("Kolumner och datatyper efter bearbetning:", data.dtypes)
 
     # Knapp för att gå vidare
     if st.button("Fortsätt till analys"):
         st.header("Steg 2: Generera analys och visualiseringar")
 
-        # Hantera valfria kolumner
+        # Logga valfria kolumner
         event_time_col = "timestamp_event" if "timestamp_event" in data.columns else None
         event_name_col = "event_name" if "event_name" in data.columns else None
         value_col = "purchase_value" if "purchase_value" in data.columns else None
+        st.write("Valfria kolumner som används:", {
+            "event_time_col": event_time_col,
+            "event_name_col": event_name_col,
+            "value_col": value_col,
+        })
 
         # Skapa LTVexploratory-objekt
         try:
             ltv = LTVexploratory(
                 data_customers=data,
-                data_events=data,  # Händelser är samma dataset
+                data_events=data,
                 uuid_col="UUID",
                 registration_time_col="timestamp_registration",
                 event_time_col=event_time_col,
@@ -106,28 +119,5 @@ if uploaded_file:
             ltv.summary()
         except Exception as e:
             st.error(f"Ett fel uppstod vid generering av sammanfattning: {e}")
-
-        # Visualisering: Fördelning av köp
-        st.subheader("Köpdistribution")
-        days_limit = st.slider("Välj tidsfönster (dagar)", min_value=30, max_value=365, value=90)
-        if event_time_col:
-            try:
-                fig, _ = ltv.plot_purchases_distribution(days_limit=days_limit)
-                st.pyplot(fig)
-            except Exception as e:
-                st.error(f"Ett fel uppstod vid generering av köpdistribution: {e}")
-        else:
-            st.info("Händelsedata krävs för att generera köpdistribution.")
-
-        # Visualisering: Paretoplot
-        st.subheader("Revenue Pareto")
-        if value_col:
-            try:
-                pareto_fig, _ = ltv.plot_revenue_pareto(days_limit=days_limit)
-                st.pyplot(pareto_fig)
-            except Exception as e:
-                st.error(f"Ett fel uppstod vid generering av Pareto-plot: {e}")
-        else:
-            st.info("Köpvärden krävs för att generera Pareto-plot.")
 else:
     st.info("Ladda upp en CSV-fil för att börja.")
