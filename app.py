@@ -14,14 +14,14 @@ def ensure_columns_exist(data, required_columns):
     for col in required_columns:
         if col not in data.columns:
             if col == "timestamp_registration":
-                data[col] = pd.NaT  # För datum
+                data[col] = pd.NaT  # Datumformat
             elif col == "timestamp_event":
-                data[col] = pd.NaT  # För datum
+                data[col] = pd.NaT  # Datumformat
             elif col == "event_name":
-                data[col] = "Unknown"  # För sträng
+                data[col] = "Unknown"  # Standard för sträng
             elif col == "purchase_value":
-                data[col] = 0.0  # För numerisk
-            st.warning(f"Kolumnen `{col}` saknades och har lagts till som en placeholder.")
+                data[col] = 0.0  # Standard för numerisk
+            st.warning(f"Kolumnen `{col}` saknades och har lagts till som placeholder.")
     return data
 
 # Titel och introduktion
