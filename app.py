@@ -49,6 +49,9 @@ if uploaded_file:
         st.error(f"Filen saknar en eller flera obligatoriska kolumner: {', '.join(mandatory_columns)}")
         st.stop()
 
+    # Konvertera UUID till sträng
+    data["UUID"] = data["UUID"].astype(str)
+
     # Knapp för att gå vidare
     if st.button("Fortsätt till analys"):
         st.header("Steg 2: Generera analys och visualiseringar")
