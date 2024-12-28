@@ -24,24 +24,24 @@ def ensure_columns_exist(data, required_columns):
             st.warning(f"Kolumnen `{col}` saknades och har lagts till som placeholder.")
     return data
 
-# Funktion för Arrow-kompatibilitet
+# Funktion för att säkerställa Arrow-kompatibilitet
 def ensure_arrow_compatible(data):
     """
     Säkerställ att alla kolumner i en DataFrame är Arrow-kompatibla.
     """
     for col in data.columns:
-        # Förvandla kolumner av objekttyp till strängar
         if data[col].dtype == 'O':  # dtype 'O' betyder objekt
-            data[col] = data[col].astype(str).fillna("")
-            st.warning(f"Kolumnen `{col}` har konverterats till sträng och null-värden har fyllts med tomma strängar.")
-        # Fyll NaN med standardvärden baserat på typ
-        elif data[col].isnull().any():
-            if pd.api.types.is_numeric_dtype(data[col]):
-                data[col] = data[col].fillna(0)
-            elif pd.api.types.is_datetime64_any_dtype(data[col]):
-                data[col] = data[col].fillna(pd.Timestamp("1970-01-01"))
-            else:
-                data[col] = data[col].fillna("")
+            try:
+                data[col] = data[col].astype(str).fillna("")
+                st.warning(f"Kolumnen `{col}` har konverterats till sträng.")
+            except Exception as e:
+                st.error(f"Misslyckades med att konvertera `{col}`: {e}")
+        elif pd.api.types.is_numeric_dtype(data[col]) and data[col].isnull().any():
+            data[col] = data[col].fillna(0)
+        elif pd.api.types.is_datetime64_any_dtype(data[col]) and data[col].isnull().any():
+            data[col] = data[col].fillna(pd.Timestamp("1970-01-01"))
+        else:
+            data[col] = data[col].fillna("")
     return data
 
 # Titel och introduktion
