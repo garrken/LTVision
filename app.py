@@ -6,7 +6,7 @@ import os
 # Dynamiskt lägg till "src" i Python-sökvägen
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
-# Importera LTVModel från ltvision
+# Importera LTVModel från src
 from ltvision import LTVModel
 
 # Titel och introduktion
