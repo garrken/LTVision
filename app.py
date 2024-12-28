@@ -6,54 +6,64 @@ import os
 # Dynamiskt lägg till "src" i Python-sökvägen
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
-# Importera LTVModel från ltv_model.py
-from ltv_model import LTVModel
+# Importera LTVexploratory från exploratory.py
+from exploratory import LTVexploratory
 
 # Titel och introduktion
 st.title("LTVision Streamlit App")
-st.write("Analysera kundens livstidsvärde (LTV) med hjälp av LTVision.")
+st.write("Analysera kundens livstidsvärde (LTV) med hjälp av LTVexploratory.")
 
-# Ladda upp en CSV-fil
-st.header("Steg 1: Ladda upp din data")
-uploaded_file = st.file_uploader("Ladda upp en CSV-fil", type=["csv"])
+# Ladda upp två CSV-filer: en för kunder och en för events
+st.header("Steg 1: Ladda upp dina data")
+uploaded_customers = st.file_uploader("Ladda upp kunddata (CSV)", type=["csv"], key="customers")
+uploaded_events = st.file_uploader("Ladda upp händelsedata (CSV)", type=["csv"], key="events")
 
-if uploaded_file:
+if uploaded_customers and uploaded_events:
     # Läs in data
-    data = pd.read_csv(uploaded_file)
-    st.write("Förhandsgranskning av data:")
-    st.write(data.head())
+    customers = pd.read_csv(uploaded_customers)
+    events = pd.read_csv(uploaded_events)
+    
+    st.write("Förhandsgranskning av kunddata:")
+    st.write(customers.head())
+    st.write("Förhandsgranskning av händelsedata:")
+    st.write(events.head())
 
-    # Kontrollera att nödvändiga kolumner finns
-    required_columns = ["customer_id", "transaction_date", "transaction_amount"]
-    if all(col in data.columns for col in required_columns):
-        st.success("Datan innehåller alla nödvändiga kolumner!")
+    # Kontrollera om nödvändiga kolumner finns
+    required_customer_columns = ["UUID", "timestamp_registration"]
+    required_event_columns = ["UUID", "timestamp_event", "event_name", "purchase_value"]
 
-        # Träna modellen
-        st.header("Steg 2: Träna LTV-modellen")
-        model = LTVModel(
-            customer_id_col="customer_id",
-            transaction_date_col="transaction_date",
-            transaction_amount_col="transaction_amount",
+    if all(col in customers.columns for col in required_customer_columns) and all(col in events.columns for col in required_event_columns):
+        st.success("Alla nödvändiga kolumner finns!")
+
+        # Skapa LTVexploratory-objekt
+        ltv = LTVexploratory(
+            data_customers=customers,
+            data_events=events,
+            uuid_col="UUID",
+            registration_time_col="timestamp_registration",
+            event_time_col="timestamp_event",
+            event_name_col="event_name",
+            value_col="purchase_value",
         )
-        model.fit(data)
-        st.write("Modellen är tränad!")
 
-        # Generera prediktioner
-        st.header("Steg 3: Generera prediktioner")
-        predictions = model.predict(data)
-        st.write("Predikterat livstidsvärde (LTV):")
-        st.write(predictions)
+        # Generera analys och visualiseringar
+        st.header("Steg 2: Generera analys och visualiseringar")
 
-        # Ladda ner resultat
-        st.download_button(
-            label="Ladda ner prediktioner som CSV",
-            data=predictions.to_csv(index=False),
-            file_name="ltv_predictions.csv",
-            mime="text/csv",
-        )
+        # Sammanfattning av data
+        st.subheader("Sammanfattning av data")
+        ltv.summary()
+
+        # Visualisering: Fördelning av köp
+        st.subheader("Köpdistribution")
+        days_limit = st.slider("Välj tidsfönster (dagar)", min_value=30, max_value=365, value=90)
+        fig, _ = ltv.plot_purchases_distribution(days_limit=days_limit)
+        st.pyplot(fig)
+
+        # Visualisering: Paretoplot
+        st.subheader("Revenue Pareto")
+        pareto_fig, _ = ltv.plot_revenue_pareto(days_limit=days_limit)
+        st.pyplot(pareto_fig)
     else:
-        st.error(
-            f"Datan saknar en eller flera av följande kolumner: {', '.join(required_columns)}"
-        )
+        st.error("Datafilerna saknar en eller flera nödvändiga kolumner.")
 else:
-    st.info("Ladda upp en CSV-fil för att börja.")
+    st.info("Ladda upp både kunddata och händelsedata för att börja.")
