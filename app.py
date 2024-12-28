@@ -6,8 +6,8 @@ import os
 # Dynamiskt lägg till "src" i Python-sökvägen
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
-# Importera LTVModel från src
-from ltvision import LTVModel
+# Importera LTVModel från ltv_model.py
+from ltv_model import LTVModel
 
 # Titel och introduktion
 st.title("LTVision Streamlit App")
@@ -55,3 +55,5 @@ if uploaded_file:
         st.error(
             f"Datan saknar en eller flera av följande kolumner: {', '.join(required_columns)}"
         )
+else:
+    st.info("Ladda upp en CSV-fil för att börja.")
