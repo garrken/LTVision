@@ -9,39 +9,24 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 # Importera LTVexploratory från exploratory.py
 from exploratory import LTVexploratory
 
-# Funktion för att säkerställa att kolumner finns
-def ensure_columns_exist(data, required_columns):
-    for col in required_columns:
-        if col not in data.columns:
-            if col == "timestamp_registration":
-                data[col] = pd.NaT  # Datumformat
-            elif col == "timestamp_event":
-                data[col] = pd.NaT  # Datumformat
-            elif col == "event_name":
-                data[col] = "Unknown"  # Standard för sträng
-            elif col == "purchase_value":
-                data[col] = 0.0  # Standard för numerisk
-            st.warning(f"Kolumnen `{col}` saknades och har lagts till som placeholder.")
-    return data
-
-# Funktion för att säkerställa Arrow-kompatibilitet
-def ensure_arrow_compatible(data):
+# Funktion för att säkerställa kompatibilitet
+def ensure_compatible_dataframe(data):
     """
-    Säkerställ att alla kolumner i en DataFrame är Arrow-kompatibla.
+    Säkerställ att alla kolumner i DataFrame är kompatibla med Streamlit och Arrow.
     """
     for col in data.columns:
-        if data[col].dtype == 'O':  # dtype 'O' betyder objekt
+        if data[col].dtype == 'O':  # dtype 'O' betyder object
             try:
                 data[col] = data[col].astype(str).fillna("")
-                st.warning(f"Kolumnen `{col}` har konverterats till sträng.")
+                st.warning(f"Kolumnen `{col}` konverterades till sträng.")
             except Exception as e:
-                st.error(f"Misslyckades med att konvertera `{col}`: {e}")
+                st.error(f"Misslyckades med att konvertera `{col}` till sträng: {e}")
         elif pd.api.types.is_numeric_dtype(data[col]) and data[col].isnull().any():
-            data[col] = data[col].fillna(0)
+            data[col] = pd.to_numeric(data[col], errors="coerce").fillna(0)
+            st.warning(f"Numeriska nullvärden i `{col}` ersattes med 0.")
         elif pd.api.types.is_datetime64_any_dtype(data[col]) and data[col].isnull().any():
-            data[col] = data[col].fillna(pd.Timestamp("1970-01-01"))
-        else:
-            data[col] = data[col].fillna("")
+            data[col] = pd.to_datetime(data[col], errors="coerce").fillna(pd.Timestamp("1970-01-01"))
+            st.warning(f"Nullvärden i `{col}` ersattes med '1970-01-01'.")
     return data
 
 # Titel och introduktion
@@ -57,64 +42,20 @@ if uploaded_file:
     data = pd.read_csv(uploaded_file)
     st.write("Kolumner direkt från filen:", data.columns.tolist())
 
-    # Ta bort extra mellanslag i kolumnnamn
-    data.columns = data.columns.str.strip()
-    st.write("Kolumner efter att ha tagit bort mellanslag:", data.columns.tolist())
-
-    # Kontrollera och skapa saknade kolumner
-    required_columns = ["UUID", "timestamp_registration", "timestamp_event", "event_name", "purchase_value"]
-    data = ensure_columns_exist(data, required_columns)
-
-    # Formattera kolumner
+    # Kontrollera och säkerställ kompatibilitet
     try:
-        # UUID som sträng
-        data["UUID"] = data["UUID"].astype(str)
-
-        # timestamp_registration som datetime
-        data["timestamp_registration"] = pd.to_datetime(data["timestamp_registration"], errors="coerce")
-        if data["timestamp_registration"].isnull().any():
-            st.warning("Ogiltiga värden i `timestamp_registration` har ersatts med NaT.")
-
-        # timestamp_event som datetime
-        data["timestamp_event"] = pd.to_datetime(data["timestamp_event"], errors="coerce")
-        if data["timestamp_event"].isnull().any():
-            st.warning("Ogiltiga värden i `timestamp_event` har ersatts med NaT.")
-
-        # event_name som sträng
-        data["event_name"] = data["event_name"].astype(str)
-
-        # purchase_value som numerisk
-        data["purchase_value"] = pd.to_numeric(data["purchase_value"], errors="coerce")
-        data["purchase_value"] = data["purchase_value"].fillna(0)
-
-        st.success("Alla kolumner har korrekt formatterats.")
+        data = ensure_compatible_dataframe(data)
+        st.success("Datan är kompatibel med Streamlit och Arrow!")
     except Exception as e:
-        st.error(f"Ett fel uppstod vid formattering av kolumner: {e}")
+        st.error(f"Misslyckades med att säkerställa kompatibilitet: {e}")
         st.stop()
 
-    # Logga problematiska kolumner
-    st.write("Datatyper i DataFrame:")
-    st.write(data.dtypes)
-    object_cols = data.select_dtypes(include=['object']).columns.tolist()
-    st.write("Kolumner med typen 'object':", object_cols)
+    # Förhandsgranska bearbetad data
+    st.write("Kolumner och datatyper efter konvertering:")
+    st.write(data.info())  # Logga alla datatyper
+    st.write(data.head())  # Visa första raderna av datan
 
-    # Kontrollera och konvertera för Arrow-kompatibilitet
-    try:
-        data = ensure_arrow_compatible(data)
-        st.success("Data är nu Arrow-kompatibel!")
-    except Exception as e:
-        st.error(f"Ett fel uppstod vid konvertering till Arrow-kompatibla typer: {e}")
-        st.stop()
-
-    # Kontrollera att alla kolumner finns och logga datatyper
-    st.write("Kolumner och datatyper efter bearbetning:", data.dtypes)
-    st.write("Dataframe efter bearbetning:", data.head())
-
-    # Förhandsgranska data
-    st.write("Förhandsgranskning av bearbetad data:")
-    st.write(data.head())
-
-    # Knapp för att gå vidare
+    # Knapp för att fortsätta till analys
     if st.button("Fortsätt till analys"):
         st.header("Steg 2: Generera analys och visualiseringar")
 
