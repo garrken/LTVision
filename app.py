@@ -9,9 +9,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 # Importera LTVexploratory från exploratory.py
 from exploratory import LTVexploratory
 
-# Avaktivera Arrow i Streamlit
-st.experimental_set_query_params(use_arrow=False)
-
 # Funktion för att säkerställa kompatibilitet
 def ensure_compatible_data(data):
     """
@@ -39,19 +36,40 @@ if uploaded_file:
     data = pd.read_csv(uploaded_file)
     st.write("Kolumner direkt från filen:", data.columns.tolist())
 
-    # Konvertera data för kompatibilitet
+    # Hantera datatyper och konvertera explicit
     try:
-        data = ensure_compatible_data(data)
-        st.success("Datan har konverterats för kompatibilitet.")
+        # UUID som sträng
+        if "UUID" in data.columns:
+            data["UUID"] = data["UUID"].astype(str)
+
+        # timestamp_registration som datetime
+        if "timestamp_registration" in data.columns:
+            data["timestamp_registration"] = pd.to_datetime(data["timestamp_registration"], errors="coerce")
+            if data["timestamp_registration"].isnull().any():
+                st.warning("Ogiltiga värden i `timestamp_registration` har ersatts med NaT.")
+
+        # timestamp_event som datetime
+        if "timestamp_event" in data.columns:
+            data["timestamp_event"] = pd.to_datetime(data["timestamp_event"], errors="coerce")
+            if data["timestamp_event"].isnull().any():
+                st.warning("Ogiltiga värden i `timestamp_event` har ersatts med NaT.")
+
+        # event_name som sträng
+        if "event_name" in data.columns:
+            data["event_name"] = data["event_name"].astype(str)
+
+        # purchase_value som numerisk
+        if "purchase_value" in data.columns:
+            data["purchase_value"] = pd.to_numeric(data["purchase_value"], errors="coerce").fillna(0)
+
+        st.success("Datan har konverterats framgångsrikt.")
     except Exception as e:
         st.error(f"Fel vid konvertering av datatyper: {e}")
         st.stop()
 
-    # Förhandsgranska data
-    st.write("Kolumner och datatyper:")
+    # Kontrollera datatyper innan analys
+    st.write("Kolumner och datatyper efter konvertering:")
     st.write(data.dtypes)
-    st.write("Förhandsgranskning av data:")
-    st.write(data.head())
 
     # Knapp för att fortsätta till analys
     if st.button("Fortsätt till analys"):
