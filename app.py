@@ -110,6 +110,10 @@ if uploaded_file:
     st.write("Kolumner och datatyper efter bearbetning:", data.dtypes)
     st.write("Dataframe efter bearbetning:", data.head())
 
+    # Förhandsgranska data
+    st.write("Förhandsgranskning av bearbetad data:")
+    st.write(data.head())
+
     # Knapp för att gå vidare
     if st.button("Fortsätt till analys"):
         st.header("Steg 2: Generera analys och visualiseringar")
