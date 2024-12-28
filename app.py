@@ -36,7 +36,7 @@ if uploaded_file:
     st.write(data.head())
 
     # Visa kolumnnamn för felsökning
-    st.write("Kolumner i datasetet:", data.columns.tolist())
+    st.write("Datasetets kolumner:", data.columns.tolist())
 
     # Kontrollera om obligatoriska kolumner finns
     mandatory_columns = ["UUID", "timestamp_registration"]
