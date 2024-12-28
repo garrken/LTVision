@@ -9,8 +9,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 # Importera LTVexploratory från exploratory.py
 from exploratory import LTVexploratory
 
-# Funktion för att validera kolumner
-def validate_columns(data, required_columns):
+# Funktion för att säkerställa att kolumner finns
+def ensure_columns_exist(data, required_columns):
     for col in required_columns:
         if col not in data.columns:
             if col == "timestamp_registration":
@@ -39,15 +39,14 @@ if uploaded_file:
     data.columns = data.columns.str.strip()
     st.write("Kolumner efter att ha tagit bort mellanslag:", data.columns.tolist())
 
-    # Validera och skapa saknade kolumner
+    # Kontrollera och skapa saknade kolumner
     required_columns = ["timestamp_registration", "timestamp_event", "event_name", "purchase_value"]
-    data = validate_columns(data, required_columns)
+    data = ensure_columns_exist(data, required_columns)
 
     # Formattera kolumner
     try:
         # UUID som sträng
         data["UUID"] = data["UUID"].astype(str)
-        st.success("Kolumnen `UUID` har konverterats till sträng.")
 
         # timestamp_registration som datetime
         data["timestamp_registration"] = pd.to_datetime(data["timestamp_registration"], errors="coerce")
@@ -61,20 +60,19 @@ if uploaded_file:
 
         # event_name som sträng
         data["event_name"] = data["event_name"].astype(str)
-        st.success("Kolumnen `event_name` har konverterats till sträng.")
 
         # purchase_value som numerisk
         data["purchase_value"] = pd.to_numeric(data["purchase_value"], errors="coerce")
         data["purchase_value"] = data["purchase_value"].fillna(0)
-        st.success("Kolumnen `purchase_value` har konverterats till numerisk.")
 
+        st.success("Alla kolumner har korrekt formatterats.")
     except Exception as e:
         st.error(f"Ett fel uppstod vid formattering av kolumner: {e}")
         st.stop()
 
     # Kontrollera att alla kolumner finns och logga datatyper
-    st.write("Kolumner och datatyper i data innan analys:", data.dtypes)
-    st.write("Data som skickas till LTVexploratory:", data.head())
+    st.write("Kolumner och datatyper innan LTVexploratory:", data.dtypes)
+    st.write("Dataframe som skickas till LTVexploratory:", data.head())
 
     # Knapp för att gå vidare
     if st.button("Fortsätt till analys"):
