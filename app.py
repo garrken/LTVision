@@ -54,26 +54,23 @@ if uploaded_file:
             st.warning("Ogiltiga värden i `timestamp_registration` har ersatts med NaT.")
 
         # timestamp_event som datetime
-        if "timestamp_event" in data.columns:
-            data["timestamp_event"] = pd.to_datetime(data["timestamp_event"], errors="coerce")
-            if data["timestamp_event"].isnull().any():
-                st.warning("Ogiltiga värden i `timestamp_event` har ersatts med NaT.")
+        data["timestamp_event"] = pd.to_datetime(data["timestamp_event"], errors="coerce")
+        if data["timestamp_event"].isnull().any():
+            st.warning("Ogiltiga värden i `timestamp_event` har ersatts med NaT.")
 
         # event_name som sträng
-        if "event_name" in data.columns:
-            data["event_name"] = data["event_name"].astype(str)
+        data["event_name"] = data["event_name"].astype(str)
 
         # purchase_value som numerisk
-        if "purchase_value" in data.columns:
-            data["purchase_value"] = pd.to_numeric(data["purchase_value"], errors="coerce")
-            data["purchase_value"] = data["purchase_value"].fillna(0)
+        data["purchase_value"] = pd.to_numeric(data["purchase_value"], errors="coerce")
+        data["purchase_value"] = data["purchase_value"].fillna(0)
 
     except Exception as e:
         st.error(f"Ett fel uppstod vid formattering av kolumner: {e}")
         st.stop()
 
     # Kontrollera att alla kolumner finns och logga datatyper
-    st.write("Kolumner och datatyper efter bearbetning:", data.dtypes)
+    st.write("Kolumner och datatyper i data innan analys:", data.dtypes)
     st.write("Data som skickas till LTVexploratory:", data.head())
 
     # Knapp för att gå vidare
