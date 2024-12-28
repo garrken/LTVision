@@ -47,6 +47,7 @@ if uploaded_file:
     try:
         # UUID som sträng
         data["UUID"] = data["UUID"].astype(str)
+        st.success("Kolumnen `UUID` har konverterats till sträng.")
 
         # timestamp_registration som datetime
         data["timestamp_registration"] = pd.to_datetime(data["timestamp_registration"], errors="coerce")
@@ -60,10 +61,12 @@ if uploaded_file:
 
         # event_name som sträng
         data["event_name"] = data["event_name"].astype(str)
+        st.success("Kolumnen `event_name` har konverterats till sträng.")
 
         # purchase_value som numerisk
         data["purchase_value"] = pd.to_numeric(data["purchase_value"], errors="coerce")
         data["purchase_value"] = data["purchase_value"].fillna(0)
+        st.success("Kolumnen `purchase_value` har konverterats till numerisk.")
 
     except Exception as e:
         st.error(f"Ett fel uppstod vid formattering av kolumner: {e}")
