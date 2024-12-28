@@ -17,4 +17,3 @@ ipython
 ipykernel
 notebook
 pre-commit
-git+https://github.com/garrken/ltvision.git
