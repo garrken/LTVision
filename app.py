@@ -52,6 +52,12 @@ if uploaded_file:
     # Konvertera UUID till sträng
     data["UUID"] = data["UUID"].astype(str)
 
+    # Konvertera timestamp_registration till datetime
+    data["timestamp_registration"] = pd.to_datetime(data["timestamp_registration"], errors="coerce")
+    if data["timestamp_registration"].isnull().any():
+        st.error("Kolumnen `timestamp_registration` innehåller ogiltiga värden som inte kunde konverteras till datetime.")
+        st.stop()
+
     # Knapp för att gå vidare
     if st.button("Fortsätt till analys"):
         st.header("Steg 2: Generera analys och visualiseringar")
