@@ -32,9 +32,10 @@ def ensure_arrow_compatible(data):
     for col in data.columns:
         # Förvandla kolumner av objekttyp till strängar
         if data[col].dtype == 'O':  # dtype 'O' betyder objekt
-            data[col] = data[col].astype(str)
+            data[col] = data[col].astype(str).fillna("")
+            st.warning(f"Kolumnen `{col}` har konverterats till sträng och null-värden har fyllts med tomma strängar.")
         # Fyll NaN med standardvärden baserat på typ
-        if data[col].isnull().any():
+        elif data[col].isnull().any():
             if pd.api.types.is_numeric_dtype(data[col]):
                 data[col] = data[col].fillna(0)
             elif pd.api.types.is_datetime64_any_dtype(data[col]):
@@ -90,6 +91,12 @@ if uploaded_file:
     except Exception as e:
         st.error(f"Ett fel uppstod vid formattering av kolumner: {e}")
         st.stop()
+
+    # Logga problematiska kolumner
+    st.write("Datatyper i DataFrame:")
+    st.write(data.dtypes)
+    object_cols = data.select_dtypes(include=['object']).columns.tolist()
+    st.write("Kolumner med typen 'object':", object_cols)
 
     # Kontrollera och konvertera för Arrow-kompatibilitet
     try:
