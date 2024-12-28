@@ -42,16 +42,18 @@ if uploaded_file:
     mandatory_columns = ["UUID", "timestamp_registration"]
     optional_columns = ["timestamp_event", "event_name", "purchase_value"]
 
-    # Kontrollera obligatoriska kolumner
+    # Logga saknade obligatoriska kolumner
     missing_required = [col for col in mandatory_columns if col not in data.columns]
     if missing_required:
-        st.error(f"Följande obligatoriska kolumner saknas: {', '.join(missing_required)}")
+        st.error(f"Obligatoriska kolumner saknas: {missing_required}")
         st.stop()
 
     st.success("Alla obligatoriska kolumner finns!")
+
+    # Logga saknade valfria kolumner
     missing_optional = [col for col in optional_columns if col not in data.columns]
     if missing_optional:
-        st.warning(f"Följande valfria kolumner saknas: {', '.join(missing_optional)}")
+        st.warning(f"Saknade valfria kolumner: {missing_optional}")
 
     # Konvertera UUID till sträng
     data["UUID"] = data["UUID"].astype(str)
@@ -59,14 +61,14 @@ if uploaded_file:
     # Konvertera timestamp_registration till datetime
     data["timestamp_registration"] = pd.to_datetime(data["timestamp_registration"], errors="coerce")
     if data["timestamp_registration"].isnull().any():
-        st.error("Kolumnen `timestamp_registration` innehåller ogiltiga värden som inte kunde konverteras till datetime.")
+        st.error("Ogiltiga värden i kolumnen `timestamp_registration`. Kontrollera filen.")
         st.stop()
 
     # Konvertera timestamp_event till datetime (om den finns)
     if "timestamp_event" in data.columns:
         data["timestamp_event"] = pd.to_datetime(data["timestamp_event"], errors="coerce")
         if data["timestamp_event"].isnull().any():
-            st.warning("Kolumnen `timestamp_event` innehåller ogiltiga värden som inte kunde konverteras till datetime.")
+            st.warning("Ogiltiga värden i kolumnen `timestamp_event`.")
 
     # Knapp för att gå vidare
     if st.button("Fortsätt till analys"):
@@ -76,6 +78,13 @@ if uploaded_file:
         event_time_col = "timestamp_event" if "timestamp_event" in data.columns else None
         event_name_col = "event_name" if "event_name" in data.columns else None
         value_col = "purchase_value" if "purchase_value" in data.columns else None
+
+        # Logga valfria kolumner som används
+        st.write("Valfria kolumner som används:", {
+            "event_time_col": event_time_col,
+            "event_name_col": event_name_col,
+            "value_col": value_col
+        })
 
         # Skapa LTVexploratory-objekt
         try:
