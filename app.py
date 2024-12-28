@@ -81,28 +81,15 @@ if uploaded_file:
         st.error(f"Ett fel uppstod vid formattering av kolumner: {e}")
         st.stop()
 
-    # Logga kolumner och datatyper
+    # Kontrollera att alla kolumner finns och logga datatyper
     st.write("Kolumner och datatyper efter bearbetning:", data.dtypes)
 
-    # Kontrollera att alla kolumner finns innan analys
-    missing_columns = [col for col in required_columns if col not in data.columns]
-    if missing_columns:
-        st.error(f"Saknade kolumner efter bearbetning: {missing_columns}")
-        st.stop()
+    # Logga data som skickas till LTVexploratory
+    st.write("Data som skickas till LTVexploratory:", data.head())
 
     # Knapp för att gå vidare
     if st.button("Fortsätt till analys"):
         st.header("Steg 2: Generera analys och visualiseringar")
-
-        # Logga valfria kolumner
-        event_time_col = "timestamp_event" if "timestamp_event" in data.columns else None
-        event_name_col = "event_name" if "event_name" in data.columns else None
-        value_col = "purchase_value" if "purchase_value" in data.columns else None
-        st.write("Valfria kolumner som används:", {
-            "event_time_col": event_time_col,
-            "event_name_col": event_name_col,
-            "value_col": value_col,
-        })
 
         # Skapa LTVexploratory-objekt
         try:
@@ -111,12 +98,15 @@ if uploaded_file:
                 data_events=data,
                 uuid_col="UUID",
                 registration_time_col="timestamp_registration",
-                event_time_col=event_time_col,
-                event_name_col=event_name_col,
-                value_col=value_col,
+                event_time_col="timestamp_event",
+                event_name_col="event_name",
+                value_col="purchase_value",
             )
         except KeyError as e:
             st.error(f"Ett fel uppstod vid hantering av kolumner: {e}")
+            st.stop()
+        except Exception as e:
+            st.error(f"Ett oväntat fel inträffade: {e}")
             st.stop()
 
         # Generera analys
