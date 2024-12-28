@@ -36,12 +36,13 @@ if uploaded_file:
     st.write(data.head())
 
     # Visa kolumnnamn för felsökning
-    st.write("Datasetets kolumner:", data.columns.tolist())
+    st.write("Kolumner i datasetet:", data.columns.tolist())
 
     # Kontrollera om obligatoriska kolumner finns
     mandatory_columns = ["UUID", "timestamp_registration"]
     optional_columns = ["timestamp_event", "event_name", "purchase_value"]
 
+    # Kontrollera obligatoriska kolumner
     missing_required = [col for col in mandatory_columns if col not in data.columns]
     if missing_required:
         st.error(f"Följande obligatoriska kolumner saknas: {', '.join(missing_required)}")
@@ -71,6 +72,11 @@ if uploaded_file:
     if st.button("Fortsätt till analys"):
         st.header("Steg 2: Generera analys och visualiseringar")
 
+        # Hantera valfria kolumner
+        event_time_col = "timestamp_event" if "timestamp_event" in data.columns else None
+        event_name_col = "event_name" if "event_name" in data.columns else None
+        value_col = "purchase_value" if "purchase_value" in data.columns else None
+
         # Skapa LTVexploratory-objekt
         try:
             ltv = LTVexploratory(
@@ -78,9 +84,9 @@ if uploaded_file:
                 data_events=data,  # Händelser är samma dataset
                 uuid_col="UUID",
                 registration_time_col="timestamp_registration",
-                event_time_col="timestamp_event" if "timestamp_event" in data.columns else None,
-                event_name_col="event_name" if "event_name" in data.columns else None,
-                value_col="purchase_value" if "purchase_value" in data.columns else None,
+                event_time_col=event_time_col,
+                event_name_col=event_name_col,
+                value_col=value_col,
             )
         except KeyError as e:
             st.error(f"Ett fel uppstod vid hantering av kolumner: {e}")
@@ -96,7 +102,7 @@ if uploaded_file:
         # Visualisering: Fördelning av köp
         st.subheader("Köpdistribution")
         days_limit = st.slider("Välj tidsfönster (dagar)", min_value=30, max_value=365, value=90)
-        if "timestamp_event" in data.columns:
+        if event_time_col:
             try:
                 fig, _ = ltv.plot_purchases_distribution(days_limit=days_limit)
                 st.pyplot(fig)
@@ -107,7 +113,7 @@ if uploaded_file:
 
         # Visualisering: Paretoplot
         st.subheader("Revenue Pareto")
-        if "purchase_value" in data.columns:
+        if value_col:
             try:
                 pareto_fig, _ = ltv.plot_revenue_pareto(days_limit=days_limit)
                 st.pyplot(pareto_fig)
